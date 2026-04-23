@@ -21,7 +21,7 @@ def save_settings(s):
     with open(SETTINGS_FILE, 'w') as f:
         json.dump(s, f, indent=2)
 
-def main(page: ft.Page):
+async def main(page: ft.Page):
     page.title = "Antigravity AI"
     page.theme_mode = ft.ThemeMode.DARK
     page.bgcolor = "#1e1e1e"
@@ -30,8 +30,19 @@ def main(page: ft.Page):
     settings = load_settings()
     chat_history = []
 
+    # ── Welcome Screen ──
+    welcome_view = ft.Container(
+        content=ft.Column([
+            ft.Icon(ft.Icons.AUTO_AWESOME_ROUNDED, size=64, color="#007acc"),
+            ft.Text("Antigravity AI", size=24, weight=ft.FontWeight.BOLD, color="#eee"),
+            ft.Text("Your mobile coding companion.", size=14, color="#888"),
+        ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+        expand=True, alignment=ft.alignment.center
+    )
+
     # ── Chat Messages ListView ──
-    chat_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, padding=ft.padding.all(12))
+    chat_list = ft.ListView(expand=True, spacing=12, auto_scroll=True, padding=ft.padding.all(16))
+    chat_list.visible = False
 
     def add_msg(role, text):
         color = "#eee" if role == "user" else "#ccc"
@@ -58,6 +69,9 @@ def main(page: ft.Page):
                 bgcolor=bg, border_radius=8, padding=12, margin=ft.margin.only(bottom=4),
             )
         )
+        if welcome_view.visible:
+            welcome_view.visible = False
+            chat_list.visible = True
         page.update()
 
     # ── Send Message ──
@@ -95,10 +109,11 @@ def main(page: ft.Page):
 
     # ── Input Area ──
     input_field = ft.TextField(
-        hint_text="Ask anything...", expand=True, border_radius=20,
-        bgcolor="#252526", border_color="#3c3c3c", color="#fff",
-        focused_border_color="#007acc", text_size=14, min_lines=1, max_lines=4,
-        on_submit=send_message,
+        hint_text="Message Antigravity...", expand=True, border_radius=24,
+        bgcolor="#252526", border_color="transparent", color="#fff",
+        focused_border_color="#007acc", text_size=15, min_lines=1, max_lines=5,
+        content_padding=ft.padding.symmetric(horizontal=20, vertical=12),
+        on_submit=send_message, cursor_color="#007acc"
     )
     send_btn = ft.IconButton(icon=ft.Icons.SEND_ROUNDED, icon_color="#007acc", on_click=send_message)
 
@@ -130,6 +145,8 @@ def main(page: ft.Page):
     def new_chat(e):
         chat_history.clear()
         chat_list.controls.clear()
+        chat_list.visible = False
+        welcome_view.visible = True
         page.update()
 
     # ── Layout ──
@@ -148,8 +165,11 @@ def main(page: ft.Page):
                     bgcolor="#181818", padding=ft.padding.symmetric(horizontal=16, vertical=8),
                     border=ft.border.only(bottom=ft.BorderSide(1, "#2b2b2b")),
                 ),
-                # Chat area
-                chat_list,
+                # Main Area (Welcome or Chat)
+                ft.Container(
+                    content=ft.Stack([welcome_view, chat_list]),
+                    expand=True
+                ),
                 # Input area
                 ft.Container(
                     content=ft.Row([input_field, send_btn], spacing=8),
